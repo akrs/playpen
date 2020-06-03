@@ -2,13 +2,9 @@ __version__ = '0.1.0'
 
 import ast
 import operator as op
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Union, Optional, Any, Callable
 
 Number = Union[int, float]
-
-OPS = {
-    ast.Mult: op.mul, ast.Add: op.add,
-}
 
 def eval_numeric(expression : str, /, variables : Optional[Dict[str, Number]] = None) -> Union[bool, Number]:
     tree = ast.parse(expression, mode='eval')
@@ -17,11 +13,16 @@ def eval_numeric(expression : str, /, variables : Optional[Dict[str, Number]] = 
         ast.USub: op.neg,
         ast.Lt: op.lt, ast.Gt: op.gt
     }
-    _eval = _eval_builder(variables, ops)
+    _eval = builder(ops, variables)
     return _eval(tree)
 
 
-def _eval_builder(variables : Dict[str, Any], ops : Dict[Any, Any]):
+def builder(ops : Dict[Any, Any], variables : Optional[Dict[str, Any]]) -> Callable[[str], Any]:
+    '''
+    Takes a dictionary of node types from ast and the functions to map them onto,
+    and a dictionary of variables to sub into the expressions, and returns a "safe"
+    eval function for simple expressions using those operations
+    '''
     def _compare(left, ops_list, comparators):
         if not ops[type(ops_list[0])](_eval(left), _eval(comparators[0])):
             return False
